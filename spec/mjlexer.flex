@@ -8,12 +8,12 @@ import java_cup.runtime.Symbol;
 
 	// ukljucivanje informacije o poziciji tokena
 	private Symbol new_symbol(int type) {
-		return new Symbol(type, yyline+1, yycolumn);
+		return new Symbol(type, yyline + 1, yycolumn + 1);
 	}
 	
 	// ukljucivanje informacije o poziciji tokena
 	private Symbol new_symbol(int type, Object value) {
-		return new Symbol(type, yyline+1, yycolumn, value);
+		return new Symbol(type, yyline+1, yycolumn + 1, value);
 	}
 
 %}
@@ -30,11 +30,7 @@ import java_cup.runtime.Symbol;
 
 %%
 
-" " 	{ }
-"\b" 	{ }
-"\t" 	{ }
-"\r\n" 	{ }
-"\f" 	{ }
+[ \b\t\r\n\f]+ 	{ }
 
 "program"   { return new_symbol(sym.PROG, yytext()); }
 "break"     { return new_symbol(sym.BREAK, yytext()); }
@@ -82,12 +78,12 @@ import java_cup.runtime.Symbol;
 "=>"		{ return new_symbol(sym.ARROW, yytext()); }
 
 "//" { yybegin(COMMENT); }
-<COMMENT> .      { yybegin(COMMENT); }
-<COMMENT> "\r\n" { yybegin(YYINITIAL); }
+<COMMENT> .      { }
+<COMMENT> "\n" { yybegin(YYINITIAL); }
 
 [0-9]+                          { return new_symbol(sym.NUMBER, new Integer (yytext())); }
 "'"."'"                         { return new_symbol(sym.CHARACTER, new Character (yytext().charAt(1))); }
-("true"|"false")                { return new sym.BOOL, yytext().equals("true")? 1 : 0; }
-([a-z]|[A-Z])[a-z|A-Z|0-9|_]* 	{ return new_symbol (sym.IDENT, yytext()); }
+("true"|"false")                { return new_symbol(sym.BOOL, yytext().equals("true")? 1 : 0); }
+([a-z]|[A-Z])[a-zA-Z0-9_]* 		{ return new_symbol (sym.IDENT, yytext()); }
 
 . { System.err.println("leksicka greska ("+yytext()+") u liniji " +(yyline + 1) + " u koloni " + (yycolumn + 1) + "\n"); }

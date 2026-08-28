@@ -9,10 +9,7 @@ parser code {:
 	boolean errorDetected;
 	
 	Logger log = Logger.getLogger(getClass());
-   
-   
-    // slede redefinisani metodi za prijavu gresaka radi izmene teksta poruke
-     
+        
     public void report_fatal_error(String message, Object info) throws java.lang.Exception {
       done_parsing();
       report_error(message, info);
@@ -59,35 +56,33 @@ terminal Integer NUMBER, BOOL;
 terminal Character CHARACTER;
 terminal String IDENT;
 
-nonterminal Program, ProgramName, ConstDecl, VarDecl, MethodDecl, FormPars, Type, Statement, DesignatorStatement,
+nonterminal Program, ConstDecl, VarDecl, MethodDecl, FormPars, Type, Statement, DesignatorStatement,
             ActPars, Condition, CondTerm, CondFact, Expr, Term, Factor, Designator,
             Assignop, Relop, Addop, Mulop;
-
-nonterminal ConstVarDeclList, MethodDeclList, ConstDeclList, ConstDecl, ConstDeclMore, VarDeclList, VarDeclMore, FormParList, FormParMore, VarDeclListRec, StatementList, ElseStmt, Statements, CondTermList, CondFactList, AddopTermList, MulopFactorList, FactorSub, DesignatorArrayName;
+			
+nonterminal ProgramName, ConstVarDeclList, MethodDeclList, ConstDeclOne, ConstDeclMore, FormParsOne, VarDeclOne, VarDeclMore, VarDeclListRec, StatementList, ElseStmt, Statements, CondTermList, CondFactList, AddopTermList, MulopFactorList, FactorSub, MethRetAndName, ActParsMore, ActParsOne, SingleStatement, Constant, DesignatorArr, ForInit, ForCondition, ForStep, IfCondition;
 
 precedence left ELSE;
-
-/* Program = "program" ident {ConstDecl | VarDecl } "{" {MethodDecl} "}". */
 
 Program ::= (Program) PROG ProgramName ConstVarDeclList LBRACE MethodDeclList RBRACE;
 
 ProgramName ::= (ProgramName) IDENT;
 
-ConstVarDeclList ::= (ConstVarDeclList_con) ConstVarDeclList ConstDeclList
-					|
-					(ConstVarDeclList_var) ConstVarDeclList VarDeclList
-					|
-					(ConstVarDeclList_e) /* epsilon */
-					;
+ConstVarDeclList ::= 	(ConstVarDeclList_con) ConstVarDeclList ConstDecl
+						|
+						(ConstVarDeclList_var) ConstVarDeclList VarDecl
+						|
+						(ConstVarDeclList_e) /* epsilon */
+						;
 				
-ConstDeclList ::= (ConstDeclList) CONST Type ConstDecl ConstDeclMore SEMI;
+ConstDecl ::= (ConstDecl) CONST Type ConstDeclOne ConstDeclMore SEMI;
 
-ConstDecl ::= (ConstDecl) IDENT ASSIGN Constant;
+ConstDeclOne ::= (ConstDeclOne) IDENT ASSIGN Constant;
 
-ConstDeclMore ::= (ConstDeclMore_comma) COMMA ConstDecl ConstDeclMore
-				|
-				(ConstDeclMore_e) /* epsilon */
-				;
+ConstDeclMore ::= 	(ConstDeclMore_comma) COMMA ConstDeclOne ConstDeclMore
+					|
+					(ConstDeclMore_e) /* epsilon */
+					;
 
 Constant ::= 	(Constant_n) NUMBER
 				|
@@ -96,16 +91,16 @@ Constant ::= 	(Constant_n) NUMBER
 				(Constant_b) BOOL
 				;
 				
-VarDeclList ::= (VarDeclList) Type VarDecl VarDeclMore SEMI;
+VarDecl ::= (VarDecl) Type VarDeclOne VarDeclMore SEMI;
 
 
-VarDecl ::= (VarDecl_var) IDENT  
-			|
-			(VarDecl_array) IDENT LBRACKET RBRACKET
-			; 
+VarDeclOne ::= 	(VarDeclOne_var) IDENT  
+				|
+				(VarDeclOne_array) IDENT LBRACKET RBRACKET
+				; 
 
 
-VarDeclMore ::= (VarDeclMore_comma) COMMA VarDecl VarDeclMore 
+VarDeclMore ::= (VarDeclMore_comma) COMMA VarDeclOne VarDeclMore 
 				|
 				(VarDeclMore_e) /* epsilon */
 				; 
@@ -126,19 +121,22 @@ MethRetAndName ::= 	(MethRetAndName_type) Type IDENT
 					|
 					(MethRetAndName_void) VOID IDENT
 					;
-
-FormParsMore ::= (FormParsMore_comma) COMMA FormPars FormParsMore
-				|
-				(FormParsMore_e) /* epsilon */
-				;
 				
-FormPars ::= (FormPars_var) Type IDENT  
+FormParsOne ::= (FormParsOne_var) Type IDENT  
 			|
-			(FormPars_array) Type IDENT LBRACKET RBRACKET
+			(FormParsOne_array) Type IDENT LBRACKET RBRACKET
+			|
+			(FormParsOne_error) error:e
+			{: parser.report_error("oporavak od greske u deklaraciji formalnog parametra. linija: " + eleft, null); :}
 			; 
 
+FormPars ::= 	(FormPars_rec) FormPars COMMA FormParsOne
+				|
+				(FormPars_one) FormParsOne
+				;
 
-VarDeclListRec ::= 	(VarDeclListRec_rec) VarDeclListRec VarDeclList
+
+VarDeclListRec ::= 	(VarDeclListRec_rec) VarDeclListRec VarDecl
 					|
 					(VarDeclListRec_e) /* epsilon */
 					;
@@ -150,22 +148,16 @@ StatementList ::= 	(StatementList_rec) StatementList Statement
 
 Statement ::= (Statement_ss) SingleStatement
 			  |
-			  (Statement_lss) Label COLON SingleStatement   
-			  |
 			  (Statement_s) Statements
 			  ;
 
-Label ::= (Label) IDENT;
-
 SingleStatement ::= (SingleStatement_ds) DesignatorStatement SEMI
 					|
-					(SingleStatement_if) IF LPAREN Condition RPAREN Statement ElseStmt
-					|
-					(SingleStatement_do) DO Statement WHILE LPAREN Condition RPAREN SEMI
+					(SingleStatement_if) IF LPAREN IfCondition RPAREN Statement ElseStmt
 					|
 					(SingleStatement_break) BREAK SEMI
 					|
-					(SingleStatement_continue) CONTINUE SEMI
+					(SingleStatement_continue) CONT SEMI
 					|
 					(SingleStatement_return1) RETURN SEMI
 			  		|
@@ -176,7 +168,28 @@ SingleStatement ::= (SingleStatement_ds) DesignatorStatement SEMI
 			  		(SingleStatement_print1) PRINT LPAREN Expr RPAREN SEMI
 			  		|
 			  		(SingleStatement_print2) PRINT LPAREN Expr COMMA NUMBER RPAREN SEMI
+					|
+					(SingleStatement_for) FOR LPAREN ForInit SEMI ForCondition SEMI ForStep RPAREN Statement
+					|
+					(SingleStatement_findAny) Designator Assignop Designator DOT FINDANY LPAREN Expr RPAREN SEMI
+					|
+					(SingleStatement_map) Designator Assignop Designator DOT MAP LPAREN IDENT ARROW Expr RPAREN SEMI
 			  		;
+
+ForInit ::= (ForInit_ds) DesignatorStatement
+			|
+			(ForInit_e) /* epsilon */
+			;
+
+ForStep ::= (ForStep_ds) DesignatorStatement
+			|
+			(ForStep_e) /* epsilon */
+			;
+
+ForCondition ::= (ForCondition_c) Condition
+				|
+				(ForCondition_e) /* epsilon */
+				;
 
 ElseStmt ::= 	(ElseStmt_yes) ELSE Statement
 				|
@@ -184,6 +197,12 @@ ElseStmt ::= 	(ElseStmt_yes) ELSE Statement
 				;
 
 Statements ::= (Statements) LBRACE StatementList RBRACE;
+
+IfCondition ::= (IfCondition_c) Condition
+				|
+				(IfCondition_error) error:e
+				{: parser.report_error("oporavak od greske u uslovu if naredbe. Linija: " + eleft, null); :}
+				;
 
 Condition ::= (Condition) CondTermList;
 
@@ -199,36 +218,39 @@ CondFactList ::= 	(CondFactList_and) CondFactList AND CondFact
 					(CondFactList_cf) CondFact
 					;
 				
-CondFact ::= 	(CondFact_expr) Expr
+CondFact ::= 	(CondFact_one) AddopTermList
 				| 
-				(CondFact_expr_r_expr) Expr Relop Expr
+				(CondFact_relop) AddopTermList Relop AddopTermList
 				;	
 			     		
 DesignatorStatement ::= (DesignatorStatement_assign) Designator Assignop Expr
 						|
 						(DesignatorStatement_error) error:e
-						{: parser.report_error("oporavak od greske u DS. Linija: " + eleft, null); :}
+						{: parser.report_error("oporavak od greske u iskazu dodele. Linija: " + eleft, null); :}
 						|
-						(DesignatorStatement_meth) Designator LPAREN ActParList RPAREN 
+						(DesignatorStatement_meth) Designator LPAREN ActPars RPAREN 
 						|
 						(DesignatorStatement_inc) Designator INC
 						|
 						(DesignatorStatement_dec) Designator DEC
 						;
 						
-ActParList ::= 		(ActParList_rec) ActPar ActParMore
-					|
-					(ActParList_e)
-					;
+ActPars ::= (ActPars_rec) ActParsOne ActParsMore
+			|
+			(ActPars_e)
+			;
 
-ActParMore ::= 	(ActParMore_comma) COMMA ActPar ActParMore
+ActParsMore ::= (ActParsMore_comma) COMMA ActParsOne ActParsMore
 				|
-				(ActParMore_e) /* epsilon */
+				(ActParsMore_e) /* epsilon */
 				;
 				
-ActPar ::= 	(ActPar) Expr;
+ActParsOne ::= 	(ActParsOne) Expr;
 						
-Expr ::= (Expr)  AddopTermList;
+Expr ::= 	(Expr_term) AddopTermList
+			|
+			(Expr_ternary) Condition QUESTION Expr COLON Expr
+			;
 		 
 AddopTermList ::= 	(AddopTermList_add) AddopTermList Addop Term
 					|
@@ -244,16 +266,14 @@ MulopFactorList ::= (MulopFactorList_mul) MulopFactorList Mulop Factor
 					(MulopFactorList_factor) Factor
 					;
 			
-Factor ::= (Factor) Unary FactorSub;
-
-Unary ::= 	(Unary_m) MINUS
+Factor ::=	(Factor) FactorSub
 			|
-			(Unary_e) /* epsilon */
+			(Factor_unary) MINUS FactorSub
 			;
 
 FactorSub ::= 	(FactorSub_var) Designator
 				|
-				(FactorSub_meth) Designator LPAREN ActParList RPAREN
+				(FactorSub_meth) Designator LPAREN ActPars RPAREN
 		   		|
 		   		(FactorSub_n) NUMBER
 		   		|
@@ -270,19 +290,12 @@ FactorSub ::= 	(FactorSub_var) Designator
 		   		
 Designator ::= 	(Designator_var) IDENT
 				|
-				(Designator_elem) DesignatorName LBRACKET Expr RBRACKET
+				(Designator_len) Designator DOT LEN
+				|
+				(Designator_arr) DesignatorArr LBRACKET Expr RBRACKET
 				;
-				
-DesignatorMore ::=  (DesignatorMore_var) DOT IDENT 
-					|
-					(DesignatorMore_len) DOT LENGTH 
-					|
-					(DesignatorRecMore_rec_var) DesignatorMore DOT IDENT
-					|
-                    (DesignatorMore_e) /* epsilon */
-					;
-						
-DesignatorName ::= (DesignatorName) IDENT;
+
+DesignatorArr ::= (DesignatorArr) Designator;
 
 Assignop ::= (Assignop) ASSIGN;
 
@@ -291,7 +304,7 @@ Addop ::= (Addop_plus) PLUS
 		  (Addop_minus) MINUS
 		  ;
 
-Mulop ::= (Mulop_mul) MUL
+Mulop ::= (Mulop_mul) MULT
 		  |		  
 		  (Mulop_div) DIV
 		  |
