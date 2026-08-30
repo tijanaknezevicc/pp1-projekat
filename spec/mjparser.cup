@@ -56,11 +56,17 @@ terminal Integer NUMBER, BOOL;
 terminal Character CHARACTER;
 terminal String IDENT;
 
+nonterminal rs.etf.pp1.symboltable.concepts.Obj Designator, DesignatorArr;
+
+nonterminal rs.etf.pp1.symboltable.concepts.Struct Expr, Term, Factor, FactorSub,
+            MulopFactorList, AddopTermList, CondFact, CondFactList, CondTerm,
+            CondTermList, Condition, ActParsOne;
+
 nonterminal Program, ConstDecl, VarDecl, MethodDecl, FormPars, Type, Statement, DesignatorStatement,
-            ActPars, Condition, CondTerm, CondFact, Expr, Term, Factor, Designator,
+            ActPars,
             Assignop, Relop, Addop, Mulop;
 			
-nonterminal ProgramName, ConstVarDeclList, MethodDeclList, ConstDeclOne, ConstDeclMore, FormParsOne, VarDeclOne, VarDeclMore, VarDeclListRec, StatementList, ElseStmt, Statements, CondTermList, CondFactList, AddopTermList, MulopFactorList, FactorSub, MethRetAndName, ActParsMore, ActParsOne, SingleStatement, Constant, DesignatorArr, ForInit, ForCondition, ForStep, IfCondition;
+nonterminal ProgramName, ConstVarDeclList, MethodDeclList, ConstDeclOne, ConstDeclMore, FormParsOne, VarDeclOne, VarDeclMore, VarDeclListRec, StatementList, ElseStmt, Statements, MethRetAndName, ActParsMore, SingleStatement, Constant, ForInit, ForCondition, ForStep, IfCondition;
 
 precedence left ELSE;
 
@@ -266,7 +272,7 @@ MulopFactorList ::= (MulopFactorList_mul) MulopFactorList Mulop Factor
 					(MulopFactorList_factor) Factor
 					;
 			
-Factor ::=	(Factor) FactorSub
+Factor ::=	(Factor_one) FactorSub
 			|
 			(Factor_unary) MINUS FactorSub
 			;
