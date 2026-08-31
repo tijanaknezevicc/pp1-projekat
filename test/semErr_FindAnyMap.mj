@@ -1,0 +1,22 @@
+program semFindAnyMapError
+
+int a, i;
+char c;
+bool t;
+int arr[], res[];
+char arrc[];
+{
+    void main()
+    {
+        arr = new int[3];
+        arrc = new char[3];
+        a = arr.findAny(1);
+        t = a.findAny(1);
+        t = arr.findAny(c);
+        a = arr.map(i => i * 2);
+        res = a.map(i => i * 2);
+        res = arr.map(nondecl => 1);
+        res = arr.map(c => 1);
+        res = arrc.map(i => i);
+    }
+}

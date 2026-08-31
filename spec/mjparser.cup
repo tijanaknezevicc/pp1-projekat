@@ -7,6 +7,7 @@ import rs.ac.bg.etf.pp1.ast.*;
 parser code {:
 
 	boolean errorDetected;
+	int lastLine;
 	
 	Logger log = Logger.getLogger(getClass());
         
@@ -29,6 +30,8 @@ parser code {:
     	if (info instanceof Symbol)
             msg.append (" na liniji ").append(((Symbol)info).left);
         log.error(msg.toString());
+        System.err.println(msg.toString());
+        
     }
 :}
 
@@ -41,6 +44,7 @@ scan with {:
 	Symbol s = this.getScanner().next_token();
 	if (s != null && s.value != null) 
 		log.info(s.toString() + " " + s.value.toString());
+	if (s != null) lastLine = s.left;
 	return s;
 :}
 
@@ -112,6 +116,9 @@ VarDecl ::= (VarDecl) Type VarDeclOne VarDeclMore SEMI;
 VarDeclOne ::= 	(VarDeclOne_var) IDENT  
 				|
 				(VarDeclOne_array) IDENT LBRACKET RBRACKET
+				|
+				(VarDeclOne_error) error:e
+                {: parser.report_error("oporavak od greske u deklaraciji promenljive. linija: " + parser.lastLine, null); :}
 				; 
 
 
@@ -142,7 +149,7 @@ FormParsOne ::= (FormParsOne_var) Type IDENT
 			(FormParsOne_array) Type IDENT LBRACKET RBRACKET
 			|
 			(FormParsOne_error) error:e
-			{: parser.report_error("oporavak od greske u deklaraciji formalnog parametra. linija: " + eleft, null); :}
+			{: parser.report_error("oporavak od greske u deklaraciji formalnog parametra. linija: " + parser.lastLine, null); :}
 			; 
 
 FormPars ::= 	(FormPars_rec) FormPars COMMA FormParsOne
@@ -216,7 +223,7 @@ Statements ::= (Statements) LBRACE StatementList RBRACE;
 IfCondition ::= (IfCondition_c) Condition
 				|
 				(IfCondition_error) error:e
-				{: parser.report_error("oporavak od greske u uslovu if naredbe. Linija: " + eleft, null); :}
+				{: parser.report_error("oporavak od greske u uslovu if naredbe. Linija: " + parser.lastLine, null); :}
 				;
 
 Condition ::= (Condition) CondTermList;
@@ -241,7 +248,7 @@ CondFact ::= 	(CondFact_one) AddopTermList
 DesignatorStatement ::= (DesignatorStatement_assign) Designator Assignop Expr
 						|
 						(DesignatorStatement_error) error:e
-						{: parser.report_error("oporavak od greske u iskazu dodele. Linija: " + eleft, null); :}
+						{: parser.report_error("oporavak od greske u iskazu dodele na liniji " + parser.lastLine, null); :}
 						|
 						(DesignatorStatement_meth) Designator LPAREN ActPars RPAREN 
 						|

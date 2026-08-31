@@ -1,0 +1,28 @@
+program semExprError
+
+const int five = 5;
+int a, b;
+char c;
+bool t;
+int arr[];
+{
+	void main()
+	{
+		arr = new int[3];
+
+		a = c + 1;          // sabiranje char i int
+		b = t * 2;          // mnozenje bool
+		a = -c;             // unarni minus nad char
+		a = five + t;       // sabiranje int i bool
+
+		a = arr;            // dodela niza u int
+		c = a;              // dodela int u char
+
+		a = arr[c];         // indeks nije int
+		a = a[1];           // indeksiranje ne-niza
+		a = c.length;       // length nad ne-nizom
+
+		arr = new int[t];   // velicina niza nije int
+		a = t ? 1 : 'x';    // grane ternarnog razlicitog tipa
+	}
+}

@@ -1,0 +1,16 @@
+program semDeclError
+
+const int five = 5;
+const char character = 3;
+const int five = 7;
+
+int a, b;
+bool a;
+foo x;
+a y;
+{
+	void main() int a; int a;
+	{
+		
+	}
+}

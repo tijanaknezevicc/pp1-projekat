@@ -1,0 +1,29 @@
+program semMethError
+
+int g;
+{
+	int noRet(int x)
+	{
+		g = x;
+	}
+
+	void voidRet()
+	{
+		return 5;
+	}
+
+	int wrongType()
+	{
+		return 'a';
+	}
+
+	char noVal()
+	{
+		return;
+	}
+
+	void main(int p)
+	{
+		g = 0;
+	}
+}

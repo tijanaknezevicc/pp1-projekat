@@ -1,0 +1,17 @@
+program ifCondError
+
+int a, b;
+{
+	void main()
+	{
+		a = 5;
+		b = 3;
+
+		if (a > ) print(1);
+
+		if (a > b) print(2);
+		else print(3);
+
+		print(eol);
+	}
+}

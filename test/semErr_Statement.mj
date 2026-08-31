@@ -1,0 +1,27 @@
+program semStatementError
+
+int a, b;
+char c;
+bool t;
+int niz[];
+{
+	void main()
+	{
+		niz = new int[3];
+		a = 1;
+
+		if (a) print(1);
+		if (a && b) print(2);
+		if (niz < niz) print(3);
+
+		c++;
+		niz++;
+
+		read(niz);
+		read(t);
+		print(niz);
+
+		break;
+		continue;
+	}
+}

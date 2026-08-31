@@ -1,0 +1,14 @@
+program varDeclError
+
+int a, b;
+int c, , d;
+char e;
+{
+	void main()
+	{
+		a = 1;
+		b = 2;
+		print(a + b);
+		print(eol);
+	}
+}
