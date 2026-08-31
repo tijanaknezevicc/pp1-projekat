@@ -1,7 +1,9 @@
 package rs.ac.bg.etf.pp1;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.log4j.Logger;
 
@@ -23,8 +25,15 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	private Obj mainMethod;
 	private Obj currentMethod;
 	private boolean returnHappened;
+	private int nVars;
+	
+	private Map<SingleStatement_map, Obj> mapIdents = new HashMap<>();
 
 	/* LOG MESSAGES */
+
+	public Map<SingleStatement_map, Obj> getMapIdents() {
+		return mapIdents;
+	}
 
 	public void report_error(String message, SyntaxNode info) {
 		errorDetected = true;
@@ -121,6 +130,7 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	@Override
 	public void visit(Program program) {
 		Tab.chainLocalSymbols(currentProgram);
+		nVars = Tab.currentScope().getnVars();
 		Tab.closeScope();
 		currentProgram = null;
 
@@ -205,11 +215,14 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	@Override
 	public void visit(MethRetAndName_void methRetAndName_void) {
 		openMethod(methRetAndName_void.getI1(), Tab.noType, methRetAndName_void);
+		methRetAndName_void.obj = currentMethod;
 	}
 
 	@Override
 	public void visit(MethRetAndName_type methRetAndName_type) {
 		openMethod(methRetAndName_type.getI2(), currentType, methRetAndName_type);
+		methRetAndName_type.obj = currentMethod;
+
 	}
 
 	private void openMethod(String name, Struct retType, SyntaxNode node) {
@@ -729,5 +742,11 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 		}
 		if (!stmt.getExpr().struct.assignableTo(dest.getType().getElemType()))
 			report_error("Tip izraza u map ne odgovara tipu elemenata rezultujuceg niza", stmt);
+		
+		mapIdents.put(stmt, identObj);
+	}
+
+	public int getnVars() {
+		return nVars;
 	}
 }

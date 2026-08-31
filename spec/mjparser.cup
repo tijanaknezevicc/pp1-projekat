@@ -56,7 +56,7 @@ terminal Integer NUMBER, BOOL;
 terminal Character CHARACTER;
 terminal String IDENT;
 
-nonterminal rs.etf.pp1.symboltable.concepts.Obj Designator, DesignatorArr;
+nonterminal rs.etf.pp1.symboltable.concepts.Obj Designator, DesignatorArr, MethRetAndName;
 
 nonterminal rs.etf.pp1.symboltable.concepts.Struct Expr, Term, Factor, FactorSub,
             MulopFactorList, AddopTermList, CondFact, CondFactList, CondTerm,
@@ -66,13 +66,22 @@ nonterminal Program, ConstDecl, VarDecl, MethodDecl, FormPars, Type, Statement, 
             ActPars,
             Assignop, Relop, Addop, Mulop;
 			
-nonterminal ProgramName, ConstVarDeclList, MethodDeclList, ConstDeclOne, ConstDeclMore, FormParsOne, VarDeclOne, VarDeclMore, VarDeclListRec, StatementList, ElseStmt, Statements, MethRetAndName, ActParsMore, SingleStatement, Constant, ForInit, ForCondition, ForStep, IfCondition;
+nonterminal ProgramName, ConstVarDeclList, MethodDeclList, ConstDeclOne, ConstDeclMore, FormParsOne, VarDeclOne, VarDeclMore, VarDeclListRec, StatementList, ElseStmt, Statements, ActParsMore, SingleStatement, Constant, ForInit, ForCondition, ForStep, IfCondition;
+
+nonterminal ElseMark, ForCondMark, ForStepMark, ForBodyMark, TernaryMark, MapMark;
 
 precedence left ELSE;
 
 Program ::= (Program) PROG ProgramName ConstVarDeclList LBRACE MethodDeclList RBRACE;
 
 ProgramName ::= (ProgramName) IDENT;
+
+ElseMark    ::= (ElseMark) /* epsilon */ ;
+ForCondMark ::= (ForCondMark) /* epsilon */ ;
+ForStepMark ::= (ForStepMark) /* epsilon */ ;
+ForBodyMark ::= (ForBodyMark) /* epsilon */ ;
+TernaryMark ::= (TernaryMark) /* epsilon */ ;
+MapMark     ::= (MapMark) /* epsilon */ ;
 
 ConstVarDeclList ::= 	(ConstVarDeclList_con) ConstVarDeclList ConstDecl
 						|
@@ -175,11 +184,11 @@ SingleStatement ::= (SingleStatement_ds) DesignatorStatement SEMI
 			  		|
 			  		(SingleStatement_print2) PRINT LPAREN Expr COMMA NUMBER RPAREN SEMI
 					|
-					(SingleStatement_for) FOR LPAREN ForInit SEMI ForCondition SEMI ForStep RPAREN Statement
+					(SingleStatement_for) FOR LPAREN ForInit SEMI ForCondMark ForCondition SEMI ForStepMark ForStep RPAREN ForBodyMark Statement
 					|
 					(SingleStatement_findAny) Designator Assignop Designator DOT FINDANY LPAREN Expr RPAREN SEMI
 					|
-					(SingleStatement_map) Designator Assignop Designator DOT MAP LPAREN IDENT ARROW Expr RPAREN SEMI
+					(SingleStatement_map) Designator Assignop Designator DOT MAP LPAREN IDENT ARROW MapMark Expr RPAREN SEMI
 			  		;
 
 ForInit ::= (ForInit_ds) DesignatorStatement
@@ -197,7 +206,7 @@ ForCondition ::= (ForCondition_c) Condition
 				(ForCondition_e) /* epsilon */
 				;
 
-ElseStmt ::= 	(ElseStmt_yes) ELSE Statement
+ElseStmt ::= 	(ElseStmt_yes) ELSE ElseMark Statement
 				|
 				(ElseStmt_no) /* epsilon */
 				;
@@ -255,7 +264,7 @@ ActParsOne ::= 	(ActParsOne) Expr;
 						
 Expr ::= 	(Expr_term) AddopTermList
 			|
-			(Expr_ternary) Condition QUESTION Expr COLON Expr
+			(Expr_ternary) Condition QUESTION Expr TernaryMark COLON Expr
 			;
 		 
 AddopTermList ::= 	(AddopTermList_add) AddopTermList Addop Term
