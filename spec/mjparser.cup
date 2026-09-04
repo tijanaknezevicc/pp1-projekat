@@ -48,13 +48,14 @@ scan with {:
 	return s;
 :}
 
-terminal PROG, BREAK, ELSE, CONST, IF, NEW, PRINT, READ, RETURN, VOID, CONT, FOR, LEN, MAP, FINDANY,
+terminal PROG, BREAK, ELSE, CONST, IF, NEW, PRINT, READ, RETURN, VOID, CONT, FOR, LEN, MAP, FINDANY, WHILE, MAPFROM,
          PLUS, MINUS, MULT, DIV, MOD,
          EQ, NEQ, GT, GTE, LT, LTE, 
          AND, OR, ASSIGN, INC, DEC,
          SEMI, COLON, COMMA, DOT, 
          LPAREN, RPAREN, LBRACKET, RBRACKET, LBRACE, RBRACE, 
-         QUESTION, ARROW;
+         QUESTION, ARROW,
+         PLUSASSIGN;
 
 terminal Integer NUMBER, BOOL;
 terminal Character CHARACTER;
@@ -72,7 +73,7 @@ nonterminal Program, ConstDecl, VarDecl, MethodDecl, FormPars, Type, Statement, 
 			
 nonterminal ProgramName, ConstVarDeclList, MethodDeclList, ConstDeclOne, ConstDeclMore, FormParsOne, VarDeclOne, VarDeclMore, VarDeclListRec, StatementList, ElseStmt, Statements, ActParsMore, SingleStatement, Constant, ForInit, ForCondition, ForStep, IfCondition;
 
-nonterminal ElseMark, ForCondMark, ForStepMark, ForBodyMark, TernaryMark, MapMark;
+nonterminal ElseMark, ForCondMark, ForStepMark, ForBodyMark, TernaryMark, MapMark, PlusAssignMark, WhileCondMark, MapFromMark;
 
 precedence left ELSE;
 
@@ -86,6 +87,9 @@ ForStepMark ::= (ForStepMark) /* epsilon */ ;
 ForBodyMark ::= (ForBodyMark) /* epsilon */ ;
 TernaryMark ::= (TernaryMark) /* epsilon */ ;
 MapMark     ::= (MapMark) /* epsilon */ ;
+PlusAssignMark ::= (PlusAssignMark) /* epsilon */ ;
+WhileCondMark ::= (WhileCondMark) /* epsilon */ ;
+MapFromMark   ::= (MapFromMark) /* epsilon */ ;
 
 ConstVarDeclList ::= 	(ConstVarDeclList_con) ConstVarDeclList ConstDecl
 						|
@@ -196,6 +200,10 @@ SingleStatement ::= (SingleStatement_ds) DesignatorStatement SEMI
 					(SingleStatement_findAny) Designator Assignop Designator DOT FINDANY LPAREN Expr RPAREN SEMI
 					|
 					(SingleStatement_map) Designator Assignop Designator DOT MAP LPAREN IDENT ARROW MapMark Expr RPAREN SEMI
+					|
+					(SingleStatement_while) WHILE LPAREN WhileCondMark Condition RPAREN Statement
+					|
+					(SingleStatement_mapFrom) Designator Assignop Designator DOT MAPFROM LPAREN Expr COMMA IDENT ARROW MapFromMark Expr RPAREN SEMI
 			  		;
 
 ForInit ::= (ForInit_ds) DesignatorStatement
@@ -255,6 +263,8 @@ DesignatorStatement ::= (DesignatorStatement_assign) Designator Assignop Expr
 						(DesignatorStatement_inc) Designator INC
 						|
 						(DesignatorStatement_dec) Designator DEC
+						|
+						(DesignatorStatement_plusassign) Designator PLUSASSIGN PlusAssignMark Expr
 						;
 						
 ActPars ::= (ActPars_rec) ActParsOne ActParsMore

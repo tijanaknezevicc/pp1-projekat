@@ -87,7 +87,7 @@ public class Compiler {
 				/* Generisanje koda */
 				
 				Code.dataSize = semanticAnalyzer.getnVars() + 2;   // +2 findAny i map
-				CodeGenerator codeGenerator = new CodeGenerator(semanticAnalyzer.getnVars(), semanticAnalyzer.getMapIdents());
+				CodeGenerator codeGenerator = new CodeGenerator(semanticAnalyzer.getnVars(), semanticAnalyzer.getMapIdents(), semanticAnalyzer.getMapFromIdents());
 				prog.traverseBottomUp(codeGenerator);
 				Code.mainPc = codeGenerator.getMainPc();
 

@@ -1,0 +1,89 @@
+program TestMapFrom
+
+// Ocekivani izlaz (svaki red je jedan test):
+//   1  2  3  4  5
+//  10 20 30 40 50
+//   0  0 30 40 50
+//   0  0  0  0 105
+//   0  0  0  0  0
+//    0  66  67
+//   0  1  2
+//   0  4  6  4  5
+
+const int SIZE = 5;
+
+int a[], b[], i, x, ib[];
+char ca[], cb[], c;
+
+{
+	int dupli(int v)
+	{
+		return 2 * v;
+	}
+
+	void main()
+	int start, lx;
+	{
+		a = new int[SIZE];
+		b = new int[SIZE];
+
+		for (i = 0; i < a.length; i++)
+			a[i] = i + 1;
+
+		// 1) kontrolni ispis polaznog niza: 1 2 3 4 5
+		for (i = 0; i < a.length; i++) print(a[i], 3);
+		print(chr(10));
+
+		// 2) start = 0, ponasa se isto kao map: 10 20 30 40 50
+		b = a.mapFrom(0, x => x * 10);
+		for (i = 0; i < b.length; i++) print(b[i], 3);
+		print(chr(10));
+
+		// 3) start = 2, prva dva elementa ostaju 0: 0 0 30 40 50
+		b = a.mapFrom(2, x => x * 10);
+		for (i = 0; i < b.length; i++) print(b[i], 3);
+		print(chr(10));
+
+		// 4) start je izraz, a ne konstanta: 0 0 0 0 105
+		start = 3;
+		b = a.mapFrom(start + 1, x => x + 100);
+		for (i = 0; i < b.length; i++) print(b[i], 4);
+		print(chr(10));
+
+		// 5) start == duzina niza, nema nijedne iteracije: 0 0 0 0 0
+		b = a.mapFrom(SIZE, x => x);
+		for (i = 0; i < b.length; i++) print(b[i], 3);
+		print(chr(10));
+
+		// 6) niz karaktera (bajtovski niz): 0 66 67
+		ca = new char[3];
+		cb = new char[3];
+		ca[0] = 'a'; ca[1] = 'b'; ca[2] = 'c';
+		cb = ca.mapFrom(1, c => chr(ord(c) - 32));
+		for (i = 0; i < cb.length; i++) print(ord(cb[i]), 4);
+		print(chr(10));
+
+		// 7) mapFrom unutar petlje + lokalna promenljiva kao ident: 0 1 2
+		for (i = 0; i < 3; i++) {
+			b = a.mapFrom(i, lx => lx - 1);
+			print(b[i], 3);
+		}
+		print(chr(10));
+
+		// 8) slozen Expr u telu (ternarni operator + poziv metode): 0 4 6 4 5
+		b = a.mapFrom(1, x => x > 3 ? x : dupli(x));
+		for (i = 0; i < b.length; i++) print(b[i], 3);
+		print(chr(10));
+		
+				// 9) char niz -> int niz (razliciti tipovi elemenata): 97 98 99
+		ib = new int[3];
+		ib = ca.mapFrom(0, c => ord(c));
+		for (i = 0; i < ib.length; i++) print(ib[i], 4);
+		print(chr(10));
+
+		// 10) int niz -> char niz: ABCDE
+		cb = a.mapFrom(0, x => chr(x + 64));
+		for (i = 0; i < cb.length; i++) print(cb[i], 1);
+		print(chr(10));
+	}
+}

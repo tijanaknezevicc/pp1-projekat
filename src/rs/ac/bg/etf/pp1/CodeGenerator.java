@@ -20,11 +20,14 @@ public class CodeGenerator extends VisitorAdaptor {
 	private final int tmpVal;
 	private final int tmpIdx;
 	private final Map<SingleStatement_map, Obj> mapIdents;
+	private final Map<SingleStatement_mapFrom, Obj> mapFromIdents;
 
-	public CodeGenerator(int nVars, Map<SingleStatement_map, Obj> mapIdents) {
+
+	public CodeGenerator(int nVars, Map<SingleStatement_map, Obj> mapIdents, Map<SingleStatement_mapFrom, Obj> mapFromIdents) {
 		this.tmpVal = nVars;
 		this.tmpIdx = nVars + 1;
 		this.mapIdents = mapIdents;
+		this.mapFromIdents = mapFromIdents;
 		initPredeclaredMethods();
 	}
 
@@ -196,6 +199,21 @@ public class CodeGenerator extends VisitorAdaptor {
 	public void visit(DesignatorStatement_assign node) {
 		Code.store(node.getDesignator().obj);
 	}
+	
+	@Override
+	public void visit(DesignatorStatement_plusassign node) {
+		Code.put(Code.add);
+		Code.store(node.getDesignator().obj);
+	}
+	
+	@Override
+	public void visit(PlusAssignMark node) {
+		DesignatorStatement_plusassign stmt = (DesignatorStatement_plusassign) node.getParent();
+		Obj obj = stmt.getDesignator().obj;
+		if (obj.getKind() == Obj.Elem)
+			Code.put(Code.dup2);
+		Code.load(obj);
+	}
 
 	@Override
 	public void visit(DesignatorStatement_inc node) {
@@ -358,18 +376,26 @@ public class CodeGenerator extends VisitorAdaptor {
 		Code.fixup(ternEnd.pop());
 	}
 
-	/* FOR PETLJA */
+	/* PETLJE */
 
 	private Stack<Integer> loopCondStart = new Stack<>();
-	private Stack<Integer> loopStepStart = new Stack<>();
+//	private Stack<Integer> loopStepStart = new Stack<>();
 	private Stack<Integer> loopBodyFix = new Stack<>();
 	private Stack<Boolean> loopHasCond = new Stack<>();
 	private Stack<List<Integer>> breakFix = new Stack<>();
+	private Stack<Integer> continueFix = new Stack<>();
 
 	@Override
 	public void visit(ForCondMark node) {
 		loopCondStart.push(Code.pc);
 		breakFix.push(new ArrayList<Integer>());
+	}
+	
+	@Override
+	public void visit(WhileCondMark node) {
+		loopCondStart.push(Code.pc);
+		breakFix.push(new ArrayList<Integer>());
+		continueFix.push(Code.pc);
 	}
 
 	@Override
@@ -387,7 +413,8 @@ public class CodeGenerator extends VisitorAdaptor {
 		/* preskoci korak pri prvom prolazu */
 		Code.putJump(0);
 		loopBodyFix.push(Code.pc - 2);
-		loopStepStart.push(Code.pc);
+//		loopStepStart.push(Code.pc);
+		continueFix.push(Code.pc);
 	}
 
 	@Override
@@ -399,7 +426,8 @@ public class CodeGenerator extends VisitorAdaptor {
 
 	@Override
 	public void visit(SingleStatement_for node) {
-		Code.putJump(loopStepStart.pop());
+//		Code.putJump(loopStepStart.pop());
+		Code.putJump(continueFix.pop());
 
 		if (loopHasCond.pop())
 			Code.fixup(condFalseFix.pop());
@@ -408,6 +436,17 @@ public class CodeGenerator extends VisitorAdaptor {
 			Code.fixup(addr);
 		breakFix.pop();
 		loopCondStart.pop();
+	}
+	
+	@Override
+	public void visit(SingleStatement_while node) {
+		Code.putJump(loopCondStart.pop());
+		Code.fixup(condFalseFix.pop());
+		
+		for (Integer addr : breakFix.peek())
+			Code.fixup(addr);		
+		breakFix.pop();
+		continueFix.pop();
 	}
 
 	@Override
@@ -418,7 +457,8 @@ public class CodeGenerator extends VisitorAdaptor {
 
 	@Override
 	public void visit(SingleStatement_continue node) {
-		Code.putJump(loopStepStart.peek());
+//		Code.putJump(loopStepStart.peek());
+		Code.putJump(continueFix.peek());
 	}
 
 	/* FIND ANY */
@@ -482,12 +522,13 @@ public class CodeGenerator extends VisitorAdaptor {
 		Obj dest = stmt.getDesignator().obj;
 		Obj src = stmt.getDesignator1().obj;
 		Struct elemType = src.getType().getElemType();
+		Struct destElemType = dest.getType().getElemType();
 
 		/* dest = new array[len(src)] */
 		Code.load(src);
 		Code.put(Code.arraylength);
 		Code.put(Code.newarray);
-		Code.put(isChar(elemType) ? 0 : 1);
+		Code.put(isChar(destElemType) ? 0 : 1);
 		Code.store(dest);
 
 		/* i = 0 */
@@ -539,5 +580,76 @@ public class CodeGenerator extends VisitorAdaptor {
 
 		Code.putJump(mapLoopStart.pop());
 		Code.fixup(mapEndFix.pop());
+	}
+	
+	/* MAP FROM */
+
+	private Stack<Integer> mapFromLoopStart = new Stack<>();
+	private Stack<Integer> mapFromEndFix = new Stack<>();
+
+	@Override
+	public void visit(MapFromMark node) {
+		SingleStatement_mapFrom stmt = (SingleStatement_mapFrom) node.getParent();
+		Obj dest = stmt.getDesignator().obj;
+		Obj src = stmt.getDesignator1().obj;
+		Struct elemType = src.getType().getElemType();
+		Struct destElemType = dest.getType().getElemType();
+		
+		/* i = poc, sa steka */
+//		Code.loadConst(0);
+		Code.put(Code.putstatic);
+		Code.put2(tmpIdx);
+
+		/* dest = new array[len(src)] */
+		Code.load(src);
+		Code.put(Code.arraylength);
+		Code.put(Code.newarray);
+		Code.put(isChar(destElemType) ? 0 : 1);
+		Code.store(dest);
+
+		int loopStart = Code.pc;
+		mapFromLoopStart.push(loopStart);
+
+		Code.put(Code.getstatic);
+		Code.put2(tmpIdx);
+		Code.load(src);
+		Code.put(Code.arraylength);
+		Code.putFalseJump(Code.lt, 0);
+		mapFromEndFix.push(Code.pc - 2);
+
+		/* ident = src[i] */
+		Code.load(src);
+		Code.put(Code.getstatic);
+		Code.put2(tmpIdx);
+		Code.load(elemObj(elemType));
+		Code.store(mapFromIdents.get(stmt));
+	}
+
+	@Override
+	public void visit(SingleStatement_mapFrom node) {
+		Obj dest = node.getDesignator().obj;
+		Struct destElem = dest.getType().getElemType();
+
+		/* na steku je rezultat Expr */
+		Code.put(Code.putstatic);
+		Code.put2(tmpVal);
+
+		Code.load(dest);
+		Code.put(Code.getstatic);
+		Code.put2(tmpIdx);
+		Code.put(Code.getstatic);
+		Code.put2(tmpVal);
+		Code.store(elemObj(destElem));
+
+		/* i++ */
+		Code.put(Code.getstatic);
+		Code.put2(tmpIdx);
+		Code.loadConst(1);
+		Code.put(Code.add);
+		Code.put(Code.putstatic);
+		Code.put2(tmpIdx);
+
+		Code.putJump(mapFromLoopStart.pop());
+		Code.fixup(mapFromEndFix.pop());
 	}
 }

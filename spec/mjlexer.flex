@@ -48,6 +48,9 @@ import java_cup.runtime.Symbol;
 "map"		{ return new_symbol(sym.MAP, yytext()); }
 "findAny"   { return new_symbol(sym.FINDANY, yytext()); }
 
+"while"		{ return new_symbol(sym.WHILE, yytext()); }
+"mapFrom"	{ return new_symbol(sym.MAPFROM, yytext()); }
+
 "+" 		{ return new_symbol(sym.PLUS, yytext()); }
 "-" 		{ return new_symbol(sym.MINUS, yytext()); }
 "*" 		{ return new_symbol(sym.MULT, yytext()); }
@@ -76,6 +79,8 @@ import java_cup.runtime.Symbol;
 "}"			{ return new_symbol(sym.RBRACE, yytext()); }
 "?" 		{ return new_symbol(sym.QUESTION, yytext()); }
 "=>"		{ return new_symbol(sym.ARROW, yytext()); }
+
+"+="		{ return new_symbol(sym.PLUSASSIGN, yytext()); }
 
 "//" { yybegin(COMMENT); }
 <COMMENT> .      { }

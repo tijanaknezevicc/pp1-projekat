@@ -28,11 +28,16 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	private int nVars;
 	
 	private Map<SingleStatement_map, Obj> mapIdents = new HashMap<>();
+	private Map<SingleStatement_mapFrom, Obj> mapFromIdents = new HashMap<>();
 
 	/* LOG MESSAGES */
 
 	public Map<SingleStatement_map, Obj> getMapIdents() {
 		return mapIdents;
+	}
+	
+	public Map<SingleStatement_mapFrom, Obj> getMapFromIdents() {
+		return mapFromIdents;
 	}
 
 	public void report_error(String message, SyntaxNode info) {
@@ -80,7 +85,7 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	/* provera da li je cvor unutar for petlje - penjanje uz roditelje */
 	private boolean insideLoop(SyntaxNode node) {
 		for (SyntaxNode p = node.getParent(); p != null; p = p.getParent())
-			if (p instanceof SingleStatement_for)
+			if (p instanceof SingleStatement_for || p instanceof SingleStatement_while)
 				return true;
 		return false;
 	}
@@ -603,6 +608,20 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 			report_error("tip izraza nije kompatibilan pri dodeli sa tipom promenljive "
 					+ dest.getName(), designatorStatement_assign);
 	}
+	
+	public void visit(DesignatorStatement_plusassign designatorStatement_plusassign) {
+		Obj dest = designatorStatement_plusassign.getDesignator().obj;
+		if (!isAssignable(dest.getKind())) {
+			report_error("dodela nije moguca: " + dest.getName() + " ne oznacava promenljivu, element niza ili polje", designatorStatement_plusassign);
+			return;
+		}
+		if (!designatorStatement_plusassign.getExpr().struct.assignableTo(dest.getType()))
+			report_error("tip izraza nije kompatibilan pri dodeli sa tipom promenljive " + dest.getName(), designatorStatement_plusassign);
+		if (!dest.getType().equals(Tab.intType))
+			report_error("+= je moguc samo nad int vrednoscu: " + dest.getName(), designatorStatement_plusassign);
+		if (!designatorStatement_plusassign.getExpr().struct.equals(Tab.intType))
+			report_error("sa desne strane += mora biti int vrednost", designatorStatement_plusassign);
+	}
 
 	@Override
 	public void visit(DesignatorStatement_inc designatorStatement_inc) {
@@ -681,13 +700,13 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	@Override
 	public void visit(SingleStatement_break singleStatement_break) {
 		if (!insideLoop(singleStatement_break))
-			report_error("iskaz break mora biti unutar for petlje", singleStatement_break);
+			report_error("iskaz break mora biti unutar petlje", singleStatement_break);
 	}
 
 	@Override
 	public void visit(SingleStatement_continue singleStatement_continue) {
 		if (!insideLoop(singleStatement_continue))
-			report_error("iskaz continue mora biti unutar for petlje", singleStatement_continue);
+			report_error("iskaz continue mora biti unutar petlje", singleStatement_continue);
 	}
 
 	/* FIND ANY */
@@ -752,6 +771,50 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 			report_error("tip izraza u map ne odgovara tipu elemenata rezultujuceg niza", stmt);
 		
 		mapIdents.put(stmt, identObj);
+	}
+	
+	@Override
+	public void visit(SingleStatement_mapFrom stmt) {
+		Obj dest = stmt.getDesignator().obj;
+		Obj src = stmt.getDesignator1().obj;
+
+		if (!isAssignable(dest.getKind()) || dest.getType().getKind() != Struct.Array) {
+			report_error("rezultat mapFrom se mora dodeliti nizu", stmt);
+			return;
+		}
+		if (src.getType().getKind() != Struct.Array) {
+			report_error("mapFrom se moze primeniti samo na niz", stmt);
+			return;
+		}
+		
+		if (!stmt.getExpr().struct.equals(Tab.intType)) {
+			report_error("mapFrom zahteva izraz tipa int", stmt);
+			return;
+		}		
+		
+		Struct srcElem = src.getType().getElemType();
+		if (!isBuiltIn(srcElem)) {
+			report_error("mapFrom zahteva niz ugradjenog tipa", stmt);
+			return;
+		}
+
+		Obj identObj = Tab.find(stmt.getI5());
+		if (identObj == Tab.noObj) {
+			report_error("ime " + stmt.getI5() + " nije deklarisano", stmt);
+			return;
+		}
+		if (identObj.getKind() != Obj.Var) {
+			report_error("ime " + stmt.getI5() + " mora biti promenljiva", stmt);
+			return;
+		}
+		if (!identObj.getType().equals(srcElem)) {
+			report_error("promenljiva " + stmt.getI5() + " mora biti istog tipa kao elementi niza", stmt);
+			return;
+		}
+		if (!stmt.getExpr2().struct.assignableTo(dest.getType().getElemType()))
+			report_error("tip izraza u mapFrom ne odgovara tipu elemenata rezultujuceg niza", stmt);
+		
+		mapFromIdents.put(stmt, identObj);
 	}
 
 	public int getnVars() {
